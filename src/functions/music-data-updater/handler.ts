@@ -5,9 +5,9 @@ import { middyfy } from '@libs/lambda';
 import schema from './schema';
 import { JacketService } from './service/JacketService';
 import { MusicService } from './service/MusicService';
-import { S3Accessor } from './infrastracture/S3Accessor';
+import { S3Accessor } from './infrastructure/S3Accessor';
 import { Client } from './utils/S3Client';
-import { Requester } from './infrastracture/Requester';
+import { Requester } from './infrastructure/Requester';
 import { chunkArray } from './utils/Formatter';
 
 const requester = new Requester();
