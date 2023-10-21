@@ -20,6 +20,7 @@ const serverlessConfiguration: AWS = {
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       S3_BUCKET: '${env:S3_BUCKET}',
       SEKAI_MASTER_URL: '${env:SEKAI_MASTER_URL}',
+      SEKAI_STORAGE_URL: '${env:SEKAI_STORAGE_URL}',
     },
     region: 'ap-northeast-1',
   },
