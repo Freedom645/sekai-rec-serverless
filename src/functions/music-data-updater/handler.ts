@@ -57,8 +57,12 @@ const musicDataUpdater: ValidatedEventAPIGatewayProxyEvent<typeof schema> = asyn
       hashList.push(...res);
     }
 
-    const savedJson = (preJson ?? []).concat(nowJson.filter((music) => diff.some((id) => id === music.id)));
+    const savedJson = (preJson ?? [])
+      .concat(nowJson.filter((music) => diff.some((id) => id === music.id)))
+      .sort((left, right) => left.id - right.id);
     await musicService.saveMusicJson(savedJson);
+
+    hashList.sort((left, right) => left.musicId - right.musicId);
     await jacketService.mergeJacketHashJson(hashList);
 
     return formatJSONResponse({
