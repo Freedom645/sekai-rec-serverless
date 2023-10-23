@@ -29,36 +29,15 @@ const serverlessConfiguration: AWS = {
   },
   package: { individually: true },
   resources: {
+    Conditions: {
+      ProdCondition: { 'Fn::Equals': ['${self:provider.stage}', 'production'] },
+    },
     Resources: {
       /** S3バケット */
       Bucket: {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.S3_BUCKET}',
-        },
-      },
-      /** S3バケットポリシー */
-      BucketPolicy: {
-        Type: 'AWS::S3::BucketPolicy',
-        DependsOn: ['Bucket'],
-        Properties: {
-          Bucket: { Ref: 'Bucket' },
-          PolicyDocument: {
-            Version: '2012-10-17',
-            Statement: [
-              {
-                Effect: 'Allow',
-                Principal: { Service: 'cloudfront.amazonaws.com' },
-                Action: ['s3:GetObject'],
-                Resource: 'arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*',
-                Condition: {
-                  StringEquals: {
-                    'AWS:SourceArn': { 'Fn::Sub': 'arn:aws:cloudfront::${AWS::AccountId}:distribution/EJMX7I20D86Q9' },
-                  },
-                },
-              },
-            ],
-          },
         },
       },
       /** S3 IAMポリシー */
@@ -83,6 +62,87 @@ const serverlessConfiguration: AWS = {
             ],
           },
           Roles: [{ Ref: 'IamRoleLambdaExecution' }],
+        },
+      },
+      /** オリジンアクセス */
+      S3CloudFrontOriginAccessControl: {
+        Type: 'AWS::CloudFront::OriginAccessControl',
+        Properties: {
+          OriginAccessControlConfig: {
+            Name: 'origin-access-control-${opt:stage, self:custom.defaultStage}',
+            OriginAccessControlOriginType: 's3',
+            SigningBehavior: 'always',
+            SigningProtocol: 'sigv4',
+          },
+        },
+      },
+      /** ディストリビューション */
+      S3CloudFrontDistribution: {
+        Type: 'AWS::CloudFront::Distribution',
+        Properties: {
+          DistributionConfig: {
+            Enabled: true,
+            Origins: [
+              {
+                Id: 'S3Origin',
+                DomainName: {
+                  'Fn::Join': ['.', [{ Ref: 'Bucket' }, 's3', { Ref: 'AWS::Region' }, { Ref: 'AWS::URLSuffix' }]],
+                },
+                OriginAccessControlId: { Ref: 'S3CloudFrontOriginAccessControl' },
+                S3OriginConfig: { OriginAccessIdentity: '' },
+              },
+            ],
+            DefaultCacheBehavior: {
+              TargetOriginId: 'S3Origin',
+              ViewerProtocolPolicy: 'https-only',
+              ForwardedValues: {
+                QueryString: false,
+              },
+            },
+            Aliases: {
+              'Fn::If': ['ProdCondition', ['${env:S3_BUCKET}'], { Ref: 'AWS::NoValue' }],
+            },
+            ViewerCertificate: {
+              'Fn::If': [
+                'ProdCondition',
+                {
+                  SslSupportMethod: 'sni-only',
+                  MinimumProtocolVersion: 'TLSv1.1_2016',
+                  AcmCertificateArn: {
+                    'Fn::Sub': 'arn:aws:acm:us-east-1:${AWS::AccountId}:certificate/${env:CFSSLCertificateId}',
+                  },
+                },
+                { Ref: 'AWS::NoValue' },
+              ],
+            },
+            HttpVersion: 'http2',
+          },
+        },
+      },
+      /** S3バケットポリシー */
+      BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        DependsOn: ['Bucket', 'S3CloudFrontDistribution'],
+        Properties: {
+          Bucket: { Ref: 'Bucket' },
+          PolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: { Service: 'cloudfront.amazonaws.com' },
+                Action: ['s3:GetObject'],
+                Resource: 'arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*',
+                Condition: {
+                  StringEquals: {
+                    'AWS:SourceArn': {
+                      'Fn::Sub': 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${S3CloudFrontDistribution}',
+                    },
+                  },
+                },
+              },
+            ],
+          },
         },
       },
     },
