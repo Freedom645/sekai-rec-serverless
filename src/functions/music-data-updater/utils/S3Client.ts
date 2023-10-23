@@ -1,5 +1,6 @@
 import * as AWS from 'aws-sdk';
 import { PromiseResult } from 'aws-sdk/lib/request';
+import MimeType from '@katsube/mimetypesjs';
 
 export class Client {
   private readonly S3: AWS.S3;
@@ -44,9 +45,7 @@ export class Client {
       Bucket: process.env.S3_BUCKET || '',
       Key: key,
       Body: JSON.stringify(content),
-      Metadata: {
-        'Content-Type': 'application/json',
-      },
+      ContentType: MimeType.get(key),
     };
 
     return await this.S3.putObject(request)
@@ -61,6 +60,7 @@ export class Client {
       Bucket: process.env.S3_BUCKET || '',
       Key: key,
       Body: image,
+      ContentType: MimeType.get(key),
     };
     return await this.S3.putObject(request)
       .promise()
