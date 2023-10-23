@@ -38,6 +38,16 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.S3_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [
+              {
+                AllowedHeaders: ['*'],
+                AllowedMethods: ['GET', 'HEAD'],
+                AllowedOrigins: ['http://localhost:5173', 'https://app.sekai-rec.net'],
+                MaxAge: 3000,
+              },
+            ],
+          },
         },
       },
       /** S3 IAMポリシー */
@@ -98,6 +108,10 @@ const serverlessConfiguration: AWS = {
               ForwardedValues: {
                 QueryString: false,
               },
+              // Ref: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-mediapackage
+              CachePolicyId: '08627262-05a9-4f76-9ded-b50ca2e3a84f',
+              // Ref: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-cors-s3
+              OriginRequestPolicyId: '88a5eaf4-2fd4-4709-b370-b4c650ea3fcf',
             },
             Aliases: {
               'Fn::If': ['ProdCondition', ['${env:S3_BUCKET}'], { Ref: 'AWS::NoValue' }],
