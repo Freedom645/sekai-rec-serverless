@@ -1,12 +1,12 @@
-import { ResponseMusic } from '../model/Music';
+import { Music, MusicsJson } from '../model/Music';
 
 export interface IMusicApi {
-  getMusicJson: () => Promise<ResponseMusic[]>;
+  getMusicJson: () => Promise<MusicsJson>;
 }
 
 export interface IMusicS3 {
-  getMusicJson: () => Promise<ResponseMusic[]>;
-  uploadMusicJson: (json: ResponseMusic[]) => Promise<void>;
+  getMusicJson: () => Promise<MusicsJson | undefined>;
+  uploadMusicJson: (json: MusicsJson) => Promise<void>;
 }
 
 export class MusicService {
@@ -21,12 +21,12 @@ export class MusicService {
     return { preJson, nowJson };
   }
 
-  detectUpdateDiff(preJson: ResponseMusic[], nowJson: ResponseMusic[]): number[] {
+  detectUpdateDiff(preJson: Music[], nowJson: Music[]): number[] {
     const idSet = preJson.reduce((set, music) => set.add(music.id), new Set<number>());
     return nowJson.flatMap((music) => (idSet.has(music.id) ? [] : [music.id]));
   }
 
-  async saveMusicJson(json: ResponseMusic[]) {
+  async saveMusicJson(json: MusicsJson) {
     await this.s3.uploadMusicJson(json);
   }
 }

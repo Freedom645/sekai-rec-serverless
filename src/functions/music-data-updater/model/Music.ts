@@ -1,4 +1,6 @@
-export interface ResponseMusic {
+export type MusicsJson = Array<Music>;
+
+export interface Music {
   id: number;
   seq: number;
   releaseConditionId: number;

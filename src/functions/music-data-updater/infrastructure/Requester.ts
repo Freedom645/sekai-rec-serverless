@@ -2,7 +2,8 @@ import axios, { AxiosInstance } from 'axios';
 import { IJacketApi } from '../service/JacketService';
 import { zeroPadding } from '../utils/Formatter';
 import { IMusicApi } from '../service/MusicService';
-import { ResponseMusic } from '../model/Music';
+import { Music } from '../model/Music';
+import { Jacket } from '../model/Jacket';
 
 const SEKAI_STORAGE_URL = process.env['SEKAI_STORAGE_URL'];
 const SEKAI_MASTER_URL = process.env['SEKAI_MASTER_URL'];
@@ -19,13 +20,17 @@ export class Requester implements IJacketApi, IMusicApi {
     });
   }
 
-  async getMusicJson(): Promise<ResponseMusic[]> {
-    return await axios.get<ResponseMusic[]>(`${SEKAI_MASTER_URL}/musics.json`).then((res) => res.data);
+  async getMusicJson(): Promise<Music[]> {
+    return await axios.get<Music[]>(`${SEKAI_MASTER_URL}/musics.json`).then((res) => res.data);
   }
 
-  async getMusicJacket(musicId: number): Promise<ArrayBuffer> {
+  async getMusicJacket(musicId: number): Promise<Jacket> {
     const pad = zeroPadding(musicId, 3);
     const url = `${SEKAI_STORAGE_URL}/sekai-assets/music/jacket/jacket_s_${pad}_rip/jacket_s_${pad}.png`;
-    return await this.apiClient.get<ArrayBuffer>(url).then((res) => res.data);
+    return await this.apiClient.get<ArrayBuffer>(url).then((res) => ({
+      musicId: musicId,
+      content: res.data,
+      extension: 'png',
+    }));
   }
 }

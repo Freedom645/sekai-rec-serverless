@@ -9,6 +9,7 @@ import { S3Accessor } from './infrastructure/S3Accessor';
 import { Client } from './utils/S3Client';
 import { Requester } from './infrastructure/Requester';
 import { chunkArray } from './utils/Formatter';
+import { JacketHash } from './model/Jacket';
 
 const requester = new Requester();
 const s3Accessor = new S3Accessor(new Client());
@@ -21,7 +22,7 @@ const musicDataUpdater: ValidatedEventAPIGatewayProxyEvent<typeof schema> = asyn
     const { preJson, nowJson } = await musicService.getMusicJson();
     const diff = musicService.detectUpdateDiff(preJson ?? [], nowJson);
 
-    console.log('更新楽曲ID: ', diff);
+    console.log('更新差分の楽曲ID: ', diff);
     if (diff.length === 0) {
       console.log('更新楽曲が無かったため、正常終了しました。');
       return formatJSONResponse({
@@ -29,15 +30,36 @@ const musicDataUpdater: ValidatedEventAPIGatewayProxyEvent<typeof schema> = asyn
       });
     }
 
-    diff.splice(30);
+    diff.splice(20);
+    console.log('更新対象の楽曲ID: ', diff);
 
     const chunkTask = chunkArray(diff, 10);
+    const hashList: JacketHash[] = [];
     for (const tasks of chunkTask) {
-      await Promise.all(tasks.map((musicId) => jacketService.forwardJacket(musicId)));
+      const res = await Promise.all(
+        tasks.map(async (musicId) => {
+          const jacket = await jacketService.getJacket(musicId);
+          await jacketService.saveJacket(jacket);
+
+          if (jacket.hash == null) {
+            throw new Error(
+              `ジャケット画像のハッシュ値が設定されていません。楽曲ID:${jacket.musicId}, 拡張子:${jacket.extension}`
+            );
+          }
+
+          return {
+            musicId: jacket.musicId,
+            hash: jacket.hash,
+          };
+        })
+      );
+
+      hashList.push(...res);
     }
 
     const savedJson = (preJson ?? []).concat(nowJson.filter((music) => diff.some((id) => id === music.id)));
     await musicService.saveMusicJson(savedJson);
+    await jacketService.mergeJacketHashJson(hashList);
 
     return formatJSONResponse({
       result: 'success',

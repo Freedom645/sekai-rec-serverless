@@ -13,7 +13,8 @@
     "@middy/core": "^3.4.0",
     "@middy/http-json-body-parser": "^3.4.0",
     "aws-sdk": "^2.1478.0",
-    "axios": "^1.5.1"
+    "axios": "^1.5.1",
+    "jimp": "^0.22.10"
   },
   "devDependencies": {
     "@serverless/typescript": "^3.0.0",
