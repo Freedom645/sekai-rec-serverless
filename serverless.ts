@@ -109,7 +109,8 @@ const serverlessConfiguration: AWS = {
                   SslSupportMethod: 'sni-only',
                   MinimumProtocolVersion: 'TLSv1.1_2016',
                   AcmCertificateArn: {
-                    'Fn::Sub': 'arn:aws:acm:us-east-1:${AWS::AccountId}:certificate/${env:CFSSLCertificateId}',
+                    'Fn::Sub':
+                      'arn:aws:acm:us-east-1:${AWS::AccountId}:certificate/${self:custom.secret.CFSSLCertificateId}',
                   },
                 },
                 { Ref: 'AWS::NoValue' },
@@ -149,8 +150,8 @@ const serverlessConfiguration: AWS = {
   },
   custom: {
     defaultStage: 'dev',
-    dotenv: {
-      path: 'env',
+    secret: {
+      CFSSLCertificateId: '${env:CFSSLCertificateId}',
     },
     esbuild: {
       bundle: true,
