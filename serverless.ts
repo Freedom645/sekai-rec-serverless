@@ -30,12 +30,38 @@ const serverlessConfiguration: AWS = {
   package: { individually: true },
   resources: {
     Resources: {
+      /** S3バケット */
       Bucket: {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.S3_BUCKET}',
         },
       },
+      /** S3バケットポリシー */
+      BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        DependsOn: ['Bucket'],
+        Properties: {
+          Bucket: { Ref: 'Bucket' },
+          PolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: { Service: 'cloudfront.amazonaws.com' },
+                Action: ['s3:GetObject'],
+                Resource: 'arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*',
+                Condition: {
+                  StringEquals: {
+                    'AWS:SourceArn': { 'Fn::Sub': 'arn:aws:cloudfront::${AWS::AccountId}:distribution/EJMX7I20D86Q9' },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+      /** S3 IAMポリシー */
       S3IamPolicy: {
         Type: 'AWS::IAM::Policy',
         DependsOn: ['Bucket'],
