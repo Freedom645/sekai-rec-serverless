@@ -31,8 +31,10 @@ export class JacketService {
   }
 
   async mergeJacketHashJson(jacketHash: JacketHash[]): Promise<void> {
-    const json = (await this.s3.getJacketHashJson()) ?? [];
-    json.push(...jacketHash);
+    const json = ((await this.s3.getJacketHashJson()) ?? [])
+      .concat(jacketHash)
+      .sort((left, right) => left.musicId - right.musicId);
+
     await this.s3.uploadJacketHashJson(json);
   }
 }

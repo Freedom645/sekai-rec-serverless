@@ -29,7 +29,6 @@ export class Client {
         if (typeof res.Body === 'object') {
           // eslint-disable-next-line @typescript-eslint/no-base-to-string
           const content = res.Body.toString();
-          console.log('content', content);
           return JSON.parse(content) as T;
         }
         throw new Error(`Not json file. key: ${key}, typeof:${typeof res.Body}`);

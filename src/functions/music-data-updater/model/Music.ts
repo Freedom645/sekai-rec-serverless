@@ -22,3 +22,14 @@ export interface Music {
   isNewlyWrittenMusic: boolean;
   musicCollaborationId?: number;
 }
+
+export type MusicDifficultyJson = Array<MusicDifficulty>;
+
+export interface MusicDifficulty {
+  id: number;
+  musicId: number;
+  musicDifficulty: string;
+  playLevel: number;
+  releaseConditionId: number;
+  totalNoteCount: number;
+}

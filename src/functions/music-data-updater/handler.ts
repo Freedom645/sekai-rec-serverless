@@ -19,51 +19,16 @@ const musicService = new MusicService(requester, s3Accessor);
 
 const musicDataUpdater: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async () => {
   try {
-    const { preJson, nowJson } = await musicService.getMusicJson();
-    const diff = musicService.detectUpdateDiff(preJson ?? [], nowJson);
+    const { preJson: preMusicJson, nowJson: nowMusicJson } = await musicService.getMusicJson();
+    const diff = musicService.detectUpdateDiff(preMusicJson, nowMusicJson);
 
-    console.log('更新差分の楽曲ID: ', diff);
-    if (diff.length === 0) {
-      console.log('更新楽曲が無かったため、正常終了しました。');
-      return formatJSONResponse({
-        result: 'success',
-      });
-    }
+    await updateJacket(diff);
 
-    diff.splice(20);
-    console.log('更新対象の楽曲ID: ', diff);
-
-    const chunkTask = chunkArray(diff, 10);
-    const hashList: JacketHash[] = [];
-    for (const tasks of chunkTask) {
-      const res = await Promise.all(
-        tasks.map(async (musicId) => {
-          const jacket = await jacketService.getJacket(musicId);
-          await jacketService.saveJacket(jacket);
-
-          if (jacket.hash == null) {
-            throw new Error(
-              `ジャケット画像のハッシュ値が設定されていません。楽曲ID:${jacket.musicId}, 拡張子:${jacket.extension}`
-            );
-          }
-
-          return {
-            musicId: jacket.musicId,
-            hash: jacket.hash,
-          };
-        })
-      );
-
-      hashList.push(...res);
-    }
-
-    const savedJson = (preJson ?? [])
-      .concat(nowJson.filter((music) => diff.some((id) => id === music.id)))
-      .sort((left, right) => left.id - right.id);
-    await musicService.saveMusicJson(savedJson);
-
-    hashList.sort((left, right) => left.musicId - right.musicId);
-    await jacketService.mergeJacketHashJson(hashList);
+    const { nowJson: nowDiffJson } = await musicService.getMusicDifficultiesJson();
+    const saveDiffJson = nowDiffJson
+      .filter((rec) => preMusicJson.some((preMusic) => preMusic.id === rec.musicId))
+      .concat(nowDiffJson.filter((rec) => diff.some((id) => rec.musicId === id)));
+    await musicService.saveDifficultiesJson(saveDiffJson);
 
     return formatJSONResponse({
       result: 'success',
@@ -74,6 +39,43 @@ const musicDataUpdater: ValidatedEventAPIGatewayProxyEvent<typeof schema> = asyn
       result: 'failed',
     });
   }
+};
+
+const updateJacket = async (diff: number[], options = { targets: 20, chunk: 10 }) => {
+  console.log('更新差分の楽曲ID: ', diff);
+  if (diff.length === 0) {
+    console.log('更新楽曲がありませんでした。');
+    return;
+  }
+
+  diff.splice(options.targets);
+  console.log('更新対象の楽曲ID: ', diff);
+
+  const chunkTask = chunkArray(diff, options.chunk);
+  const hashList: JacketHash[] = [];
+  for (const tasks of chunkTask) {
+    const res = await Promise.all(
+      tasks.map(async (musicId) => {
+        const jacket = await jacketService.getJacket(musicId);
+        await jacketService.saveJacket(jacket);
+
+        if (jacket.hash == null) {
+          throw new Error(
+            `ジャケット画像のハッシュ値が設定されていません。楽曲ID:${jacket.musicId}, 拡張子:${jacket.extension}`
+          );
+        }
+
+        return {
+          musicId: jacket.musicId,
+          hash: jacket.hash,
+        };
+      })
+    );
+
+    hashList.push(...res);
+  }
+
+  await jacketService.mergeJacketHashJson(hashList);
 };
 
 export const main = middyfy(musicDataUpdater);

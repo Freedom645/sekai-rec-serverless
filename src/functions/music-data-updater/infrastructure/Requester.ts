@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { IJacketApi } from '../service/JacketService';
 import { zeroPadding } from '../utils/Formatter';
 import { IMusicApi } from '../service/MusicService';
-import { Music } from '../model/Music';
+import { MusicsJson, MusicDifficultyJson } from '../model/Music';
 import { Jacket } from '../model/Jacket';
 
 const SEKAI_STORAGE_URL = process.env['SEKAI_STORAGE_URL'];
@@ -20,8 +20,12 @@ export class Requester implements IJacketApi, IMusicApi {
     });
   }
 
-  async getMusicJson(): Promise<Music[]> {
-    return await axios.get<Music[]>(`${SEKAI_MASTER_URL}/musics.json`).then((res) => res.data);
+  async getMusicJson(): Promise<MusicsJson> {
+    return await axios.get<MusicsJson>(`${SEKAI_MASTER_URL}/musics.json`).then((res) => res.data);
+  }
+
+  async getMusicDifficultiesJson(): Promise<MusicDifficultyJson> {
+    return await axios.get<MusicDifficultyJson>(`${SEKAI_MASTER_URL}/musicDifficulties.json`).then((res) => res.data);
   }
 
   async getMusicJacket(musicId: number): Promise<Jacket> {

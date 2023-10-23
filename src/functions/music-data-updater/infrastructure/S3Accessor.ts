@@ -1,5 +1,5 @@
 import { Jacket, JacketHashJson } from '../model/Jacket';
-import { MusicsJson } from '../model/Music';
+import { MusicDifficultyJson, MusicsJson } from '../model/Music';
 import { IJacketS3 } from '../service/JacketService';
 import { IMusicS3 } from '../service/MusicService';
 import { zeroPadding } from '../utils/Formatter';
@@ -30,6 +30,16 @@ export class S3Accessor implements IJacketS3, IMusicS3 {
 
   async uploadMusicJson(json: MusicsJson): Promise<void> {
     const key = 'music/musics.json';
+    await this.s3.uploadJSONObject(key, json);
+  }
+
+  async getMusicDifficultiesJson(): Promise<MusicDifficultyJson> {
+    const key = 'music/musicDifficulties.json';
+    return await this.s3.getJSONObject<MusicDifficultyJson>(key);
+  }
+
+  async uploadMusicDifficultiesJson(json: MusicDifficultyJson): Promise<void> {
+    const key = 'music/musicDifficulties.json';
     await this.s3.uploadJSONObject(key, json);
   }
 }
