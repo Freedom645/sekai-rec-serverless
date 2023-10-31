@@ -7,7 +7,7 @@ export default {
     {
       http: {
         method: 'post',
-        path: 'hello',
+        path: 'music-data-updater',
         request: {
           schemas: {
             'application/json': schema,
