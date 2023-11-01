@@ -160,7 +160,8 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
-      EventBridgeRule: {
+      /** EventBridge 音楽データ定期更新 */
+      EventBridgeMusicDataUpdaterRule: {
         Type: 'AWS::Events::Rule',
         Properties: {
           EventBusName: 'default',
@@ -178,13 +179,14 @@ const serverlessConfiguration: AWS = {
           ],
         },
       },
+      /** Permission 音楽データ定期更新用 */
       PermissionForEventsToInvokeLambda: {
         Type: 'AWS::Lambda::Permission',
         Properties: {
           FunctionName: { Ref: 'MusicDataUpdaterLambdaFunction' },
           Action: 'lambda:InvokeFunction',
           Principal: 'events.amazonaws.com',
-          SourceArn: { 'Fn::GetAtt': ['EventBridgeRule', 'Arn'] },
+          SourceArn: { 'Fn::GetAtt': ['EventBridgeMusicDataUpdaterRule', 'Arn'] },
         },
       },
     },
