@@ -79,7 +79,7 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::CloudFront::OriginAccessControl',
         Properties: {
           OriginAccessControlConfig: {
-            Name: 'origin-access-control-${opt:stage, self:custom.defaultStage}',
+            Name: 'origin-access-control-${self:provider.stage}',
             OriginAccessControlOriginType: 's3',
             SigningBehavior: 'always',
             SigningProtocol: 'sigv4',
@@ -158,6 +158,35 @@ const serverlessConfiguration: AWS = {
               },
             ],
           },
+        },
+      },
+      /** EventBridge 音楽データ定期更新 */
+      EventBridgeMusicDataUpdaterRule: {
+        Type: 'AWS::Events::Rule',
+        Properties: {
+          EventBusName: 'default',
+          Name: 'music-updater-event-rule-${self:provider.stage}',
+          ScheduleExpression: 'cron(0 0,3,4,5,6,6,7,8,9,12,15 * * ? *)',
+          State: {
+            'Fn::If': ['ProdCondition', 'ENABLED', 'DISABLED'],
+          },
+          Targets: [
+            {
+              Arn: { 'Fn::GetAtt': ['MusicDataUpdaterLambdaFunction', 'Arn'] },
+              Id: 'MusicDataUpdaterLambdaFunction',
+              Input: JSON.stringify({ headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+            },
+          ],
+        },
+      },
+      /** Permission 音楽データ定期更新用 */
+      PermissionForEventsToInvokeLambda: {
+        Type: 'AWS::Lambda::Permission',
+        Properties: {
+          FunctionName: { Ref: 'MusicDataUpdaterLambdaFunction' },
+          Action: 'lambda:InvokeFunction',
+          Principal: 'events.amazonaws.com',
+          SourceArn: { 'Fn::GetAtt': ['EventBridgeMusicDataUpdaterRule', 'Arn'] },
         },
       },
     },
